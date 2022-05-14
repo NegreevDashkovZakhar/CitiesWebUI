@@ -1,0 +1,75 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<script src="https://maps.google.com/maps/api/js?sensor=true" type="text/javascript"></script>
+
+<style>
+    .cityInfo {
+        height: 150px;
+        width: 250px;
+    }
+</style>
+
+<div id="canvas" style="height: 600px; width:600px;"></div>
+
+<!--Устанавливаем секцию scripts, которая затем будет рендериться на мастер-странице -->
+@section scripts {
+    <script type="text/javascript">
+
+    $(document).ready(function () {
+        GetMap();
+    });
+
+    // Функция загрузки
+    function GetMap() {
+
+        let apiURL = 'https://localhost:5001';
+
+        google.maps.visualRefresh = true;
+        // установка основных координат
+        let mapCenter = new google.maps.LatLng(55.752622, 37.617567);
+
+        // Установка общих параметров отображения карты, как масштаб, центральная точка и тип карты
+        var mapOptions = {
+            zoom: 15,
+            center: mapCenter,
+            mapTypeId: google.maps.MapTypeId.G_NORMAL_MAP
+        };
+
+        // Встраиваем гугл-карты в элемент на странице и получаем объект карты
+        var map = new google.maps.Map(document.getElementById("canvas"), mapOptions);
+
+
+        // Получаем данные
+        $.getJSON(`${apiURL}/cities`, (data) => {
+            console.log(data);
+            // Проходим по всем данным и устанавливаем для них маркеры
+            $.each(data, (i, item) => {
+                var marker = new google.maps.Marker({
+                    'position': new google.maps.LatLng(item.coords.lat, item.coords.lon),
+                    'map': map,
+                    'title': item.name
+                });
+
+                // Берем для этих маркеров синие иконки с сайта google
+                marker.setIcon('https://maps.google.com/mapfiles/ms/icons/blue-dot.png')
+
+                // Для каждого объекта добавляем доп. информацию, выводимую в отдельном окне
+                var infowindow = new google.maps.InfoWindow({
+                    content: "<div class='cityInfo'><h4>Станция " + item.name + "</h4><div><h5>Округ: "
+                        + item.district + "</h5></div><div><h5>Население: " + item.population + " человек</h5>"
+                        + "<h5> Субъект: " + item.subject + "</h5></div ></div > "
+                });
+
+                // обработчик нажатия на маркер объекта
+                google.maps.event.addListener(marker, 'click', function () {
+                    infowindow.open(map, marker);
+                });
+            })
+        });
+    }
+    </script>
+}
